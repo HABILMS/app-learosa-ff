@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Download, Sparkles, Share2, Trash2, FileAudio } from 'lucide-react';
+import { ArrowLeft, Download, Sparkles, Trash2, FileAudio, Loader2 } from 'lucide-react';
 import { Meeting } from '../types';
 import ReactMarkdown from 'react-markdown';
+import { convertBlobUrlToMp3 } from '../lib/audioUtils';
 
 interface MeetingDetailProps {
   meeting: Meeting;
@@ -12,6 +14,8 @@ interface MeetingDetailProps {
 }
 
 export function MeetingDetail({ meeting, onBack, onDelete, onSummarize, isSummarizing }: MeetingDetailProps) {
+  const [isExportingMp3, setIsExportingMp3] = useState(false);
+
   const exportTranscription = () => {
     const text = meeting.transcript.map(s => `[${new Date(s.timestamp).toLocaleTimeString()}] ${s.text}`).join('\n\n');
     const blob = new Blob([text], { type: 'text/plain' });
@@ -22,12 +26,32 @@ export function MeetingDetail({ meeting, onBack, onDelete, onSummarize, isSummar
     a.click();
   };
 
-  const exportAudio = () => {
+  const exportAudioWebm = () => {
     if (!meeting.audioUrl) return;
     const a = document.createElement('a');
     a.href = meeting.audioUrl;
     a.download = `audio-${meeting.title || 'reuniao'}.webm`;
     a.click();
+  };
+
+  const exportAudioMp3 = async () => {
+    if (!meeting.audioUrl) return;
+    setIsExportingMp3(true);
+    try {
+      const mp3Blob = await convertBlobUrlToMp3(meeting.audioUrl);
+      const url = URL.createObjectURL(mp3Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audio-${meeting.title || 'reuniao'}.mp3`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to convert to mp3', err);
+      // fallback to standard export if somehow fails
+      alert('Erro ao exportar como MP3. Faça o download como WebM.');
+    } finally {
+      setIsExportingMp3(false);
+    }
   };
 
   return (
@@ -36,12 +60,23 @@ export function MeetingDetail({ meeting, onBack, onDelete, onSummarize, isSummar
         <button onClick={onBack} className="p-2 glass rounded-2xl hover:bg-white/10 transition-colors">
           <ArrowLeft className="w-6 h-6 text-white" />
         </button>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {meeting.audioUrl && (
-            <button onClick={exportAudio} className="btn-secondary text-blue-400">
-              <FileAudio className="w-5 h-5" />
-              Áudio
-            </button>
+            <>
+              <button 
+                onClick={exportAudioMp3} 
+                className="btn-secondary text-green-400 disabled:opacity-50"
+                disabled={isExportingMp3}
+                title="Exportar como MP3"
+              >
+                {isExportingMp3 ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileAudio className="w-5 h-5" />}
+                MP3
+              </button>
+              <button onClick={exportAudioWebm} className="btn-secondary text-blue-400" title="Exportar como WebM">
+                <FileAudio className="w-5 h-5" />
+                WebM
+              </button>
+            </>
           )}
           <button 
             onClick={() => onSummarize(meeting.id)}
