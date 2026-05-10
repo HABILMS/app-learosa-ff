@@ -1,20 +1,24 @@
-import { GoogleGenAI } from "@google/genai";
 import { TranscriptSegment } from "../types";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export async function summarizeMeeting(transcript: TranscriptSegment[]): Promise<string | undefined> {
   const text = transcript.map(s => s.text).join(' ');
   
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Resuma a seguinte reunião transcrita de forma executiva, destacando os pontos principais e ações a serem tomadas. Use markdown para formatação. Idioma: Português.\n\nTranscrição: ${text}`,
+    const res = await fetch('/api/summarize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, lang: 'pt-BR' })
     });
     
-    return response.text;
+    if (!res.ok) {
+      throw new Error(`Failed to summarize: ${res.statusText}`);
+    }
+    
+    const data = await res.json();
+    return data.summary;
   } catch (error) {
     console.error("Error summarizing meeting:", error);
+    alert('Erro ao resumir. Verifique se as chaves de API estão configuradas (NVIDIA/GEMINI).');
     return undefined;
   }
 }

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Mic, Square, Save, RotateCcw, Languages, Sparkles, Loader2, Brain } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
 import { useTranscription } from '../hooks/useTranscription';
 import { cn } from '../lib/utils';
 import { TranscriptSegment } from '../types';
@@ -34,44 +33,32 @@ export function MeetingRecorder({ onSave }: MeetingRecorderProps) {
     setIsProcessingAI(true);
     
     try {
-        const blobToBase64 = (blob: Blob): Promise<string> => {
-          return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const base64String = reader.result as string;
-              resolve(base64String.split(',')[1]);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        };
+        const formData = new FormData();
+        formData.append('audio', Object.assign(audioBlob, { name: 'audio.webm' }));
+        formData.append('lang', lang);
 
-        const base64Audio = await blobToBase64(audioBlob);
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-        
-        const response = await ai.models.generateContent({
-          model: 'gemini-3-flash-preview',
-          contents: [
-            {
-              inlineData: {
-                mimeType: audioBlob.type || 'audio/webm',
-                data: base64Audio
-              }
-            },
-            { text: `Transcribe this audio precisely. Important: Provide ONLY the transcription text without any markdown or formatting blocks like \`\`\`. The audio language is likely ${lang || 'pt-BR'}, so return the transcription in that language. Add paragraph breaks for natural pauses or speaker changes.` }
-          ]
+        const res = await fetch('/api/transcribe', {
+          method: 'POST',
+          body: formData,
         });
-        
-        if (response.text) {
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || 'Falha na API de transcrição com o Gemini');
+        }
+
+        const data = await res.json();
+
+        if (data.text) {
           // Create a new segment representing the full AI transcription
           setSegments([{
             id: Math.random().toString(36).substr(2, 9),
-            text: response.text,
+            text: data.text,
             timestamp: Date.now(),
           }]);
         }
     } catch (err) {
-      console.error(err);
+      console.error("Transcription error:", err);
       alert('Erro ao processar áudio com IA. Tente novamente.');
     } finally {
       setIsProcessingAI(false);
@@ -137,16 +124,18 @@ export function MeetingRecorder({ onSave }: MeetingRecorderProps) {
               >
                 Mic
               </button>
-              <button
-                onClick={() => setCaptureMode('system')}
-                disabled={isRecording}
-                className={cn(
-                  "px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider rounded-lg transition-all",
-                  captureMode === 'system' ? "bg-white text-black" : "text-white/40 hover:text-white/60"
-                )}
-              >
-                Meeting
-              </button>
+              {typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia && (
+                <button
+                  onClick={() => setCaptureMode('system')}
+                  disabled={isRecording}
+                  className={cn(
+                    "px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider rounded-lg transition-all",
+                    captureMode === 'system' ? "bg-white text-black" : "text-white/40 hover:text-white/60"
+                  )}
+                >
+                  Meeting
+                </button>
+              )}
             </div>
             {captureMode === 'system' && !isRecording && (
               <span className="text-[9px] text-blue-400 font-medium animate-pulse">
