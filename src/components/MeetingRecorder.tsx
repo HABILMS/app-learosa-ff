@@ -98,7 +98,9 @@ export function MeetingRecorder({ onSave }: MeetingRecorderProps) {
         console.error("Transcription error:", err);
         let msg = err.message || 'Erro ao processar áudio com IA';
         if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
-          msg = "A chave de API configurada no menu lateral (Settings > Secrets) é inválida. Por favor, APAGUE a variável GEMINI_API_KEY que você criou no menu Settings para usar a chave padrão do AI Studio.";
+          msg = "A chave de API configurada é inválida.";
+        } else if (msg.includes('API_KEY_SERVICE_BLOCKED') || msg.includes('are blocked')) {
+          msg = "Acesso Bloqueado: A chave da API do Gemini inserida possui restrições ou a 'Generative Language API' não está ativada no seu Google Cloud Project. Habilite a API no Google Cloud Console ou crie uma chave sem restrições no AI Studio (aistudio.google.com/app/apikey).";
         }
         alert(`Erro: ${msg}`);
     } finally {
@@ -174,7 +176,11 @@ export function MeetingRecorder({ onSave }: MeetingRecorderProps) {
         }
     } catch (err: any) {
         console.error("Assistant error:", err);
-        alert(`Erro AI: ${err.message || 'Falha ao processar solicitação'}`);
+        let msg = err.message || 'Falha ao processar solicitação';
+        if (msg.includes('API_KEY_SERVICE_BLOCKED') || msg.includes('are blocked')) {
+          msg = "Acesso Bloqueado: A chave da API do Gemini possui restrições ou a API (Generative Language) não está ativada no projeto. Acesse aistudio.google.com/app/apikey para usar uma chave válida.";
+        }
+        alert(`Erro AI: ${msg}`);
     } finally {
       setIsProcessingAI(false);
     }

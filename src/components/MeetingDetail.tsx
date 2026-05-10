@@ -86,7 +86,11 @@ export function MeetingDetail({ meeting, onBack, onDelete, onSummarize, isSummar
         }
     } catch (err: any) {
         console.error("Assistant error:", err);
-        alert(`Erro AI: ${err.message || 'Falha ao processar solicitação'}`);
+        let msg = err.message || 'Falha ao processar solicitação';
+        if (msg.includes('API_KEY_SERVICE_BLOCKED') || msg.includes('are blocked')) {
+          msg = "Acesso Bloqueado: A chave da API do Gemini possui restrições ou a API (Generative Language) não está ativada no projeto do Render. Acesse aistudio.google.com/app/apikey para usar uma chave válida.";
+        }
+        alert(`Erro AI: ${msg}`);
     } finally {
       setIsProcessingAI(false);
     }
