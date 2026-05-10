@@ -10,8 +10,14 @@ export async function summarizeMeeting(transcript: TranscriptSegment[]): Promise
       body: JSON.stringify({ text, lang: 'pt-BR' })
     });
     
+    const contentType = res.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+       throw new Error("O servidor retornou HTML. Se estiver no Render, certifique-se de implantar como 'Web Service' (Node.js) e não 'Static Site'.");
+    }
+
     if (!res.ok) {
-      throw new Error(`Failed to summarize: ${res.statusText}`);
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `Failed to summarize: ${res.statusText}`);
     }
     
     const data = await res.json();

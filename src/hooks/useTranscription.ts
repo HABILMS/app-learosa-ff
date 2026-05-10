@@ -19,10 +19,6 @@ export function useTranscription(lang: string = 'pt-BR') {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (SpeechRecognition) {
-      if (recognitionRef.current) {
-        try { recognitionRef.current.stop(); } catch(e) {}
-      }
-
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
@@ -51,17 +47,20 @@ export function useTranscription(lang: string = 'pt-BR') {
         if (event.error === 'not-allowed') {
           alert('Acesso ao microfone negado.');
           setIsRecording(false);
-        } else if (event.error === 'no-speech' || event.error === 'network') {
-          // Ignore, onend will restart if isRecording is true
-        } else {
-          // For other errors, we might want to stop or just log
-          setIsRecording(false);
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+             mediaRecorderRef.current.stop();
+          }
         }
       };
 
       recognition.onend = () => {
-        if (isRecording) {
-          try { recognitionRef.current.start(); } catch (e) {}
+        // Only restart if we're still supposed to be recording
+        if (isRecordingRef.current) {
+          try { 
+            recognitionRef.current?.start(); 
+          } catch (e) {
+            console.warn("Retrying recognition start...");
+          }
         }
       };
 
@@ -73,7 +72,10 @@ export function useTranscription(lang: string = 'pt-BR') {
         try { recognitionRef.current.stop(); } catch (e) {}
       }
     };
-  }, [lang, isRecording]);
+  }, [lang]);
+
+  // Use a ref for isRecording to avoid useEffect loops
+  const isRecordingRef = useRef(false);
 
   const startRecording = useCallback(async () => {
     try {
@@ -83,26 +85,22 @@ export function useTranscription(lang: string = 'pt-BR') {
 
       if (captureMode === 'system') {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-          alert('Seu navegador não suporta a captura de tela/reunião.');
-          setIsRecording(false);
+          alert('A captura de reunião/tela não é permitida neste navegador ou dispositivo.');
           return;
         }
 
-        // Capture system/tab audio
-        // IMPORTANT: User must check "Share audio" in the popup
         const screenStream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
           audio: true
         });
 
         if (screenStream.getAudioTracks().length === 0) {
-          alert("Atenção: Você não selecionou 'Compartilhar Áudio'. A reunião não será gravada.");
+          alert("Atenção: Você não selecionou 'Compartilhar Áudio'.");
         } else {
           const systemSource = audioContext.createMediaStreamSource(screenStream);
           systemSource.connect(destination);
         }
 
-        // Always also get mic to mix
         try {
           const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
           const micSource = audioContext.createMediaStreamSource(micStream);
@@ -145,35 +143,27 @@ export function useTranscription(lang: string = 'pt-BR') {
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start(1000);
 
+      isRecordingRef.current = true;
+      setIsRecording(true);
+
       if (recognitionRef.current) {
-        setIsRecording(true);
         try {
           recognitionRef.current.start();
         } catch (e) {
-          console.error("Speech recognition already started or failed", e);
+          console.error("Speech recognition start error:", e);
         }
       }
     } catch (err) {
       console.error("Failed to start recording:", err);
-      if (err instanceof Error) {
-        if (err.name === 'NotAllowedError') {
-          if (err.message.includes('Permission denied by user')) {
-            // User likely cancelled the screen share prompt, no need to alert aggressively
-            console.log('Captura cancelada pelo usuário.');
-          } else {
-            alert("Permissão negada. Por favor, permita o acesso ao microfone/tela.");
-          }
-        } else if (err.name === 'AbortError') {
-          // User cancelled
-        } else {
-          alert("Erro ao iniciar gravação: " + err.message);
-        }
-      }
       setIsRecording(false);
+      isRecordingRef.current = false;
     }
   }, [captureMode]);
 
   const stopRecording = useCallback(() => {
+    isRecordingRef.current = false;
+    setIsRecording(false);
+
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
@@ -184,7 +174,6 @@ export function useTranscription(lang: string = 'pt-BR') {
     }
 
     if (recognitionRef.current) {
-      setIsRecording(false);
       try { recognitionRef.current.stop(); } catch(e) {}
       setInterimText('');
     }

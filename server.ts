@@ -19,47 +19,6 @@ async function startServer() {
 
   app.use(express.json());
 
-  // API Route for AI Transcription
-  app.post("/api/transcribe", upload.single('audio'), async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: "No audio file provided" });
-      }
-      
-      const { lang } = req.body;
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      
-      console.log("Uploading file to Gemini API...");
-      const uploadResult = await ai.files.upload({
-        file: req.file.path,
-        config: {
-          mimeType: req.file.mimetype || 'audio/webm',
-        }
-      });
-      
-      console.log("File uploaded successfully. Generating transcription...");
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [
-          uploadResult,
-          { text: `Transcribe this audio precisely. Important: Provide ONLY the transcription text without any markdown or formatting blocks like \`\`\`. The audio language is likely ${lang || 'pt-BR'}, so return the transcription in that language. Add paragraph breaks for natural pauses or speaker changes.` }
-        ]
-      });
-      
-      console.log("Transcription complete.");
-      
-      // Cleanup temp file
-      fs.unlink(req.file.path, (err) => {
-        if (err) console.error("Failed to delete temp audio file:", err);
-      });
-      
-      res.json({ text: response.text });
-    } catch (err: any) {
-      console.error("Transcription error:", err);
-      res.status(500).json({ error: err.message || "Failed to transcribe audio" });
-    }
-  });
-
   // API Route for NVIDIA Summarization
   app.post("/api/summarize", async (req, res) => {
     try {
@@ -69,7 +28,7 @@ async function startServer() {
       }
       
       if (!process.env.NVIDIA_API_KEY) {
-        return res.status(401).json({ error: "NVIDIA_API_KEY not configured. Add it in the settings." });
+        return res.status(401).json({ error: "A chave da API da NVIDIA (NVIDIA_API_KEY) não está configurada e é obrigatória para gerar resumos." });
       }
       
       const promptLang = lang === 'pt-BR' ? 'em português' : 'in the original language';
@@ -125,6 +84,12 @@ async function startServer() {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
+
+  // Global Error Handler to always return JSON
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error("Global error handler caught:", err);
+    res.status(err.status || 500).json({ error: err.message || "Internal Server Error" });
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);

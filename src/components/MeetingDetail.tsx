@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { motion } from 'motion/react';
-import { ArrowLeft, Download, Sparkles, Trash2, FileAudio, Loader2 } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { ArrowLeft, Download, Sparkles, Trash2, FileAudio, Loader2, MessageSquare, Brain, X, Send } from 'lucide-react';
 import { Meeting } from '../types';
 import ReactMarkdown from 'react-markdown';
 import { convertBlobUrlToMp3 } from '../lib/audioUtils';
+import { GoogleGenAI } from "@google/genai";
 
 interface MeetingDetailProps {
   meeting: Meeting;
@@ -15,6 +16,11 @@ interface MeetingDetailProps {
 
 export function MeetingDetail({ meeting, onBack, onDelete, onSummarize, isSummarizing }: MeetingDetailProps) {
   const [isExportingMp3, setIsExportingMp3] = useState(false);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const [assistantPrompt, setAssistantPrompt] = useState('');
+  const [assistantResponse, setAssistantResponse] = useState('');
+  const [isProcessingAI, setIsProcessingAI] = useState(false);
+  const responseEndRef = useRef<HTMLDivElement>(null);
 
   const exportTranscription = () => {
     const text = meeting.transcript.map(s => `[${new Date(s.timestamp).toLocaleTimeString()}] ${s.text}`).join('\n\n');
@@ -54,6 +60,51 @@ export function MeetingDetail({ meeting, onBack, onDelete, onSummarize, isSummar
     }
   };
 
+  const handleAssistantRequest = async () => {
+    if (!assistantPrompt.trim() || meeting.transcript.length === 0) return;
+    setIsProcessingAI(true);
+    setAssistantResponse('');
+    
+    try {
+        const apiKey = (process as any).env.GEMINI_API_KEY?.trim();
+        if (!apiKey) {
+          throw new Error("A chave da API do Gemini não foi encontrada.");
+        }
+
+        const ai = new GoogleGenAI({ apiKey });
+        const fullText = meeting.transcript.map(s => s.text).join('\n\n');
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: [
+            { text: `Você é um assistente de reuniões. Aqui está a transcrição da reunião:\n\n${fullText}\n\nO usuário solicitou: ${assistantPrompt}\n\nResponda de forma profissional e formatada (use markdown se necessário, mas mantenha limpo). Se pedirem para separar locutores, use sua melhor estimativa baseada no contexto. Se pedirem tradução, traduza preservando o tom.` }
+          ]
+        });
+
+        if (response.text) {
+          setAssistantResponse(response.text);
+        }
+    } catch (err: any) {
+        console.error("Assistant error:", err);
+        alert(`Erro AI: ${err.message || 'Falha ao processar solicitação'}`);
+    } finally {
+      setIsProcessingAI(false);
+    }
+  };
+
+  const exportAssistantResponse = () => {
+    if (!assistantResponse) return;
+    const blob = new Blob([assistantResponse], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ia_reuniao_${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="max-w-4xl mx-auto w-full px-6 py-8 h-full flex flex-col">
       <header className="flex items-center justify-between mb-8">
@@ -61,6 +112,15 @@ export function MeetingDetail({ meeting, onBack, onDelete, onSummarize, isSummar
           <ArrowLeft className="w-6 h-6 text-white" />
         </button>
         <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => setIsAssistantOpen(true)}
+            className="btn-secondary text-blue-400"
+            title="Solicitações customizadas com IA"
+          >
+            <MessageSquare className="w-5 h-5" />
+            IA Chat
+          </button>
+          
           {meeting.audioUrl && (
             <>
               <button 
@@ -152,6 +212,109 @@ export function MeetingDetail({ meeting, onBack, onDelete, onSummarize, isSummar
           </div>
         </section>
       </div>
+
+      {/* AI Assistant Modal */}
+      <AnimatePresence>
+        {isAssistantOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => !isProcessingAI && setIsAssistantOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl bg-[#0a0a0a] border border-white/10 rounded-[32px] overflow-hidden flex flex-col max-h-[80vh] shadow-2xl"
+            >
+              <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white">IA Assistant</h3>
+                    <p className="text-[10px] text-white/40 uppercase tracking-widest font-mono">Custom Requests</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsAssistantOpen(false)}
+                  className="p-2 hover:bg-white/5 rounded-full transition-colors text-white/40 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {assistantResponse ? (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-white/[0.03] border border-white/5 rounded-2xl">
+                      <p className="text-sm text-white/50 mb-2 font-medium flex items-center gap-2">
+                        <MessageSquare className="w-3 h-3" /> Sua solicitação:
+                      </p>
+                      <p className="text-sm text-white/80">{assistantPrompt}</p>
+                    </div>
+                    <div className="p-6 bg-blue-500/5 border border-blue-500/10 rounded-2xl prose prose-invert max-w-none">
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap text-white/90">
+                        {assistantResponse}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-40 flex flex-col items-center justify-center text-center space-y-4 text-white/20">
+                    <Brain className="w-12 h-12 opacity-10" />
+                    <p className="text-sm px-10">Peça resumos específicos, traduções ou análises detalhadas da sua transcrição.</p>
+                  </div>
+                )}
+                <div ref={responseEndRef} />
+              </div>
+
+              <div className="p-6 bg-white/[0.02] border-t border-white/5">
+                {assistantResponse && (
+                  <button
+                    onClick={exportAssistantResponse}
+                    className="mb-4 w-full py-3 px-4 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-xl flex items-center justify-center gap-2 transition-all font-bold text-xs uppercase tracking-wider"
+                  >
+                    <Download className="w-4 h-4" /> Exportar Resultado para TXT
+                  </button>
+                )}
+                
+                <div className="relative">
+                  <textarea
+                    value={assistantPrompt}
+                    onChange={(e) => setAssistantPrompt(e.target.value)}
+                    placeholder="Ex: Resuma os 3 pontos principais, Seque em Português, Separe quem falou o quê..."
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:border-blue-500/50 focus:outline-none transition-all resize-none h-24"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleAssistantRequest();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={handleAssistantRequest}
+                    disabled={isProcessingAI || !assistantPrompt.trim() || meeting.transcript.length === 0}
+                    className="absolute bottom-3 right-3 p-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all disabled:opacity-20 disabled:cursor-not-allowed group shadow-lg shadow-blue-500/20"
+                  >
+                    {isProcessingAI ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Send className="w-5 h-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                    )}
+                  </button>
+                </div>
+                <p className="mt-2 text-[10px] text-white/20 text-center uppercase tracking-tighter">
+                  Pressione Enter para enviar (Shift+Enter para nova linha)
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
