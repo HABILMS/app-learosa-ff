@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { ArrowRight, Mic, CheckCircle2, Sparkles, Brain, Clock, Shield } from 'lucide-react';
+import { ArrowRight, Mic, CheckCircle2, Sparkles, Brain, Clock, Shield, MessageSquare, Monitor, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase';
@@ -59,7 +59,9 @@ export default function LandingPage() {
             transition={{ duration: 0.7, delay: 0.2 }}
             className="text-xl text-white/50 mb-10 max-w-2xl mx-auto font-light leading-relaxed"
           >
-            Grave, transcreva e resuma suas reuniões em tempo real. A inteligência artificial que transforma horas de conversas em atas organizadas em segundos.
+            Grave suas telas e áudios, transcreva em tempo real com alta precisão e interaja 
+            com nossa IA para obter resumos, atas e decisões em segundos. A ferramenta 
+            definitiva para a era da IA.
           </motion.p>
 
           <motion.div
@@ -82,73 +84,96 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Feature Showcase */}
-      <section className="py-24 px-6 bg-black relative border-t border-white/5">
-        <div className="max-w-6xl mx-auto space-y-24">
+      {/* Feature Showcase - Bento Grid Style */}
+      <section className="py-24 px-6 bg-[#030303] relative border-t border-white/5">
+        <div className="max-w-6xl mx-auto space-y-16">
           
-          <div className="flex flex-col md:flex-row items-center gap-12 lg:gap-24">
-            <div className="flex-1 space-y-6">
-              <div className="w-12 h-12 bg-blue-500/10 text-blue-400 rounded-xl flex items-center justify-center">
-                <Mic className="w-6 h-6" />
-              </div>
-              <h2 className="text-3xl md:text-4xl font-serif italic text-white">Transcrição em Tempo Real</h2>
-              <p className="text-lg text-white/50 font-light leading-relaxed">
-                Nossa IA acompanha cada palavra dita na reunião, gerando legendas simultâneas com alta precisão e sem atrasos irritantes. Suporta multi-idiomas nativamente.
-              </p>
-              <ul className="space-y-3 pt-4">
-                {['Reconhecimento avançado de fala', 'Suporte a mais de 50 idiomas', 'Captura de áudio do sistema e microfone'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-white/70">
-                    <CheckCircle2 className="w-5 h-5 text-blue-400" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="flex-1 w-full bg-white/5 border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
-               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-               <div className="space-y-4">
-                 <div className="w-24 h-4 bg-white/10 rounded-full animate-pulse" />
-                 <div className="w-full h-8 bg-blue-500/20 rounded-lg" />
-                 <div className="w-3/4 h-8 bg-white/5 rounded-lg" />
-                 <div className="w-5/6 h-8 bg-white/5 rounded-lg" />
-               </div>
-            </div>
+          <div className="text-center space-y-4 max-w-2xl mx-auto border-b border-white/5 pb-10">
+            <h2 className="text-4xl md:text-5xl font-serif italic text-white tracking-tight">O Fim das Anotações Manuais</h2>
+            <p className="text-xl text-white/40 font-light">Tudo que você precisa para extrair o máximo das suas reuniões.</p>
           </div>
 
-          <div className="flex flex-col md:flex-row-reverse items-center gap-12 lg:gap-24">
-            <div className="flex-1 space-y-6">
-              <div className="w-12 h-12 bg-purple-500/10 text-purple-400 rounded-xl flex items-center justify-center">
-                <Brain className="w-6 h-6" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            {/* Feature 1: Captura Híbrida */}
+            <div className="col-span-1 md:col-span-2 bg-[#080808] border border-white/5 rounded-[32px] p-8 md:p-12 relative overflow-hidden group hover:border-white/10 transition-all">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full group-hover:bg-blue-500/20 transition-all" />
+              <div className="relative z-10 flex flex-col h-full">
+                <div className="w-14 h-14 bg-blue-500/10 text-blue-400 rounded-2xl flex items-center justify-center mb-8 border border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.1)]">
+                  <Monitor className="w-6 h-6" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-4">Captura Híbrida do Sistema</h3>
+                <p className="text-white/50 leading-relaxed mb-8 flex-1">
+                  Reuniões no Google Meet, Zoom ou Teams? Não importa. Capture o áudio interno do seu computador junto com seu microfone simultaneamente, garantindo a gravação de todos os participantes.
+                </p>
+                <div className="flex gap-4">
+                   <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/30 bg-white/5 px-4 py-2 rounded-full border border-white/5">
+                     <CheckCircle2 className="w-3 h-3 text-blue-400" /> Desktop
+                   </div>
+                   <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/30 bg-white/5 px-4 py-2 rounded-full border border-white/5">
+                     <CheckCircle2 className="w-3 h-3 text-blue-400" /> Web
+                   </div>
+                </div>
               </div>
-              <h2 className="text-3xl md:text-4xl font-serif italic text-white">Resumos por IA</h2>
-              <p className="text-lg text-white/50 font-light leading-relaxed">
-                Com o poder da NVIDIA Meta Llama 3.1 70B e do Google Gemini, transformamos sua longa reunião em tópicos, decisões e itens de ação formatados da melhor forma possível.
-              </p>
-              <ul className="space-y-3 pt-4">
-                {['Extração de Action Items', 'Análise de Sentimento (Em breve)', 'Exportação com um clique'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-white/70">
-                    <CheckCircle2 className="w-5 h-5 text-purple-400" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
-            <div className="flex-1 w-full bg-white/5 border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
-               <div className="absolute inset-0 bg-gradient-to-bl from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-               <div className="space-y-6">
-                 <div>
-                    <div className="text-purple-400 text-sm font-bold mb-2 uppercase tracking-wide">Decisões:</div>
-                    <div className="w-full h-6 bg-white/10 rounded-md mb-2" />
-                    <div className="w-2/3 h-6 bg-white/10 rounded-md" />
+
+            {/* Feature 2: IA Chat */}
+            <div className="col-span-1 bg-[#080808] border border-white/5 rounded-[32px] p-8 relative overflow-hidden group hover:border-white/10 transition-all">
+               <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 blur-[100px] rounded-full group-hover:bg-purple-500/20 transition-all" />
+               <div className="relative z-10">
+                 <div className="w-14 h-14 bg-purple-500/10 text-purple-400 rounded-2xl flex items-center justify-center mb-8 border border-purple-500/20">
+                   <MessageSquare className="w-6 h-6" />
                  </div>
-                 <div>
-                    <div className="text-blue-400 text-sm font-bold mb-2 uppercase tracking-wide">Próximos Passos:</div>
-                    <div className="w-4/5 h-6 bg-white/5 rounded-md mb-2" />
-                 </div>
+                 <h3 className="text-2xl font-bold text-white mb-4">Chat IA Exclusivo</h3>
+                 <p className="text-white/50 leading-relaxed">
+                   Converse com a transcrição! Peça para a IA <strong>separar por locutores</strong>, <strong>traduzir partes</strong>, extrair metas ou gerar um post para o LinkedIn baseado na reunião. Você no controle.
+                 </p>
                </div>
             </div>
-          </div>
 
+            {/* Feature 3: Transcricao */}
+            <div className="col-span-1 bg-[#080808] border border-white/5 rounded-[32px] p-8 relative overflow-hidden group hover:border-white/10 transition-all">
+               <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full group-hover:bg-emerald-500/20 transition-all" />
+               <div className="relative z-10">
+                 <div className="w-14 h-14 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center mb-8 border border-emerald-500/20">
+                   <Mic className="w-6 h-6" />
+                 </div>
+                 <h3 className="text-2xl font-bold text-white mb-4">Tempo Real</h3>
+                 <p className="text-white/50 leading-relaxed">
+                   Acompanhe as palavras sendo transcritas milissegundo a milissegundo. Suporte nativo para mais de 50 idiomas e reconhecimento preciso de sotaques intensos.
+                 </p>
+               </div>
+            </div>
+
+            {/* Feature 4: Resumos Meta & Gemini */}
+            <div className="col-span-1 md:col-span-2 bg-[#080808] border border-white/5 rounded-[32px] p-8 md:p-12 relative overflow-hidden group hover:border-white/10 transition-all flex flex-col md:flex-row gap-8 items-center">
+               <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 blur-[100px] rounded-full group-hover:bg-orange-500/20 transition-all" />
+               <div className="relative z-10 flex-1">
+                 <div className="w-14 h-14 bg-orange-500/10 text-orange-400 rounded-2xl flex items-center justify-center mb-8 border border-orange-500/20">
+                   <Brain className="w-6 h-6" />
+                 </div>
+                 <h3 className="text-2xl font-bold text-white mb-4">Geração de Atas com NVIDIA & Gemini</h3>
+                 <p className="text-white/50 leading-relaxed mb-6">
+                   Modelos robustos como <strong>Llama 3.1 70B (NVIDIA)</strong> e <strong>Gemini 1.5 Pro</strong> organizam, classificam e preparam tarefas pendentes. Extraia a essência da reunião em 1 clique.
+                 </p>
+               </div>
+               
+               {/* Visual Element */}
+               <div className="flex-1 w-full relative z-10">
+                  <div className="p-6 bg-white/[0.02] border border-white/5 rounded-2xl backdrop-blur-md shadow-2xl space-y-4">
+                     <div className="flex items-center gap-2 mb-2">
+                       <FileText className="w-4 h-4 text-orange-400" />
+                       <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">Output IA</span>
+                     </div>
+                     <div className="h-4 w-3/4 bg-white/10 rounded" />
+                     <div className="h-4 w-full bg-white/5 rounded" />
+                     <div className="h-4 w-5/6 bg-white/5 rounded" />
+                     <div className="h-4 w-1/2 bg-white/5 rounded" />
+                  </div>
+               </div>
+            </div>
+
+          </div>
         </div>
       </section>
 
@@ -162,9 +187,9 @@ export default function LandingPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
             {[
-              { icon: <Clock />, title: "Economize Horas", desc: "Não perca mais tempo escrevendo atas manualmente." },
-              { icon: <Shield />, title: "Seguro & Privado", desc: "Seus dados armazenados com segurança e privacidade total." },
-              { icon: <Sparkles />, title: "IA de Ponta", desc: "Modelos state-of-the-art processando seu texto na hora." }
+              { icon: <Clock />, title: "Economize Horas", desc: "Não perca mais tempo escrevendo atas manualmente, foque na conversa real." },
+              { icon: <MessageSquare />, title: "Fale com a Reunião", desc: "Faça perguntas em linguagem natural para nossa IA sobre o que foi discutido." },
+              { icon: <Sparkles />, title: "Multi Modelos", desc: "Usamos os melhores LLMs adequados para o seu momento." }
             ].map((feature, i) => (
               <div key={i} className="p-8 bg-white/5 border border-white/10 rounded-3xl hover:bg-white/10 transition-colors">
                 <div className="w-12 h-12 bg-white/10 text-white rounded-2xl flex items-center justify-center mb-6">
