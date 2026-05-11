@@ -22,9 +22,9 @@ export async function summarizeMeeting(transcript: TranscriptSegment[]): Promise
     
     const data = await res.json();
     return data.summary;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error summarizing meeting:", error);
-    alert('Erro ao resumir. Verifique se as chaves de API estão configuradas (NVIDIA/GEMINI).');
+    alert(error.message || 'Erro ao resumir.');
     return undefined;
   }
 }

@@ -27,41 +27,51 @@ async function startServer() {
         return res.status(400).json({ error: "No text provided" });
       }
       
-      if (!process.env.NVIDIA_API_KEY) {
-        return res.status(401).json({ error: "A chave da API da NVIDIA (NVIDIA_API_KEY) não está configurada e é obrigatória para gerar resumos." });
-      }
-      
       const promptLang = lang === 'pt-BR' ? 'em português' : 'in the original language';
-      
-      const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "meta/llama-3.1-70b-instruct",
-          messages: [
-            {
-              role: "system",
-              content: `Você é um assistente especializado em organizar e resumir transcrições de reuniões. Por favor, responda ${promptLang}.`
-            },
-            {
-              role: "user",
-              content: `Por favor, organize e faça um resumo estruturado da seguinte transcrição, destacando os principais pontos, tópicos discutidos e itens de ação se houver:\n\n${text}`
-            }
-          ],
-          max_tokens: 1024,
-        })
-      });
-      
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(`NVIDIA API Error: ${response.status} ${JSON.stringify(errData)}`);
+      let summary = '';
+
+      if (process.env.NVIDIA_API_KEY) {
+        const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "meta/llama-3.1-70b-instruct",
+            messages: [
+              {
+                role: "system",
+                content: `Você é um assistente especializado em organizar e resumir transcrições de reuniões. Por favor, responda ${promptLang}.`
+              },
+              {
+                role: "user",
+                content: `Por favor, organize e faça um resumo estruturado da seguinte transcrição, destacando os principais pontos, tópicos discutidos e itens de ação se houver:\n\n${text}`
+              }
+            ],
+            max_tokens: 1024,
+          })
+        });
+        
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(`NVIDIA API Error: ${response.status} ${JSON.stringify(errData)}`);
+        }
+        
+        const data = await response.json();
+        summary = data.choices?.[0]?.message?.content;
+      } else if (process.env.GEMINI_API_KEY) {
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const response = await ai.models.generateContent({
+          model: 'gemini-1.5-flash',
+          contents: [
+            { text: `Você é um assistente especializado em organizar e resumir transcrições de reuniões. Por favor, responda ${promptLang}.\n\nPor favor, organize e faça um resumo estruturado da seguinte transcrição, destacando os principais pontos, tópicos discutidos e itens de ação se houver:\n\n${text}` }
+          ]
+        });
+        summary = response.text || '';
+      } else {
+        return res.status(401).json({ error: "Nenhuma chave de API configurada. Por favor, adicione NVIDIA_API_KEY ou deixe o GEMINI_API_KEY padrão ativo." });
       }
-      
-      const data = await response.json();
-      const summary = data.choices?.[0]?.message?.content;
       
       res.json({ summary });
     } catch (err: any) {
