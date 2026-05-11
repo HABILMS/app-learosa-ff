@@ -74,7 +74,7 @@ export function MeetingRecorder({ onSave }: MeetingRecorderProps) {
         const base64Data = await base64Promise;
 
         const response = await ai.models.generateContent({
-          model: 'gemini-1.5-flash',
+          model: 'gemini-3-flash-preview',
           contents: [
             {
               inlineData: {
@@ -165,7 +165,7 @@ export function MeetingRecorder({ onSave }: MeetingRecorderProps) {
         const fullText = segments.map(s => s.text).join('\n\n');
 
         const response = await ai.models.generateContent({
-          model: 'gemini-1.5-flash',
+          model: 'gemini-3-flash-preview',
           contents: [
             { text: `Você é um assistente de reuniões. Aqui está a transcrição da reunião:\n\n${fullText}\n\nO usuário solicitou: ${assistantPrompt}\n\nResponda de forma profissional e formatada (use markdown se necessário, mas mantenha limpo). Se pedirem para separar locutores, use sua melhor estimativa baseada no contexto. Se pedirem tradução, traduza preservando o tom.` }
           ]
