@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Mic, List, Settings, Sparkles, LogOut, LogIn } from 'lucide-react';
+import { Mic, List, Settings, Sparkles, LogOut, LogIn, HelpCircle } from 'lucide-react';
 import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
 import { collection, query, orderBy, onSnapshot, doc, setDoc, deleteDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { auth, db, googleProvider, handleFirestoreError, OperationType } from '../lib/firebase';
@@ -8,12 +8,13 @@ import { MeetingRecorder } from '../components/MeetingRecorder';
 import { MeetingList } from '../components/MeetingList';
 import { MeetingDetail } from '../components/MeetingDetail';
 import { PremiumOverlay } from '../components/PremiumOverlay';
+import { FAQView } from '../components/FAQView';
 import { Meeting, TranscriptSegment } from '../types';
 import { summarizeMeeting } from '../services/geminiService';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 
-type View = 'recorder' | 'list' | 'detail';
+type View = 'recorder' | 'list' | 'detail' | 'faq';
 
 export default function Dashboard() {
   const [view, setView] = useState<View>('recorder');
@@ -216,6 +217,18 @@ export default function Dashboard() {
                 />
               </motion.div>
             )}
+
+            {view === 'faq' && (
+              <motion.div
+                key="faq"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="h-[calc(100vh-80px)] overflow-y-auto"
+              >
+                <FAQView />
+              </motion.div>
+            )}
           </AnimatePresence>
         </main>
       )}
@@ -234,6 +247,12 @@ export default function Dashboard() {
             onClick={() => setView('list')}
             icon={<List className="w-6 h-6" />}
             label="Reuniões"
+          />
+          <NavButton 
+            active={view === 'faq'} 
+            onClick={() => setView('faq')}
+            icon={<HelpCircle className="w-6 h-6" />}
+            label="FAQ"
           />
           <button 
             onClick={() => setShowPremium(true)}

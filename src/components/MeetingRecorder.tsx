@@ -426,9 +426,25 @@ export function MeetingRecorder({ onSave }: MeetingRecorderProps) {
                     </div>
                   </div>
                 ) : (
-                  <div className="h-40 flex flex-col items-center justify-center text-center space-y-4 text-white/20">
+                  <div className="h-auto py-8 flex flex-col items-center justify-center text-center space-y-4 text-white/20">
                     <Brain className="w-12 h-12 opacity-10" />
                     <p className="text-sm px-10">Peça resumos específicos, traduções ou análises detalhadas da sua transcrição.</p>
+                    <div className="flex flex-wrap items-center justify-center gap-2 mt-4 px-4 max-w-lg">
+                      {[
+                        "Resuma os 3 pontos principais",
+                        "Extraia as tarefas e responsáveis",
+                        "Faça uma ata formal da reunião",
+                        "Liste os tópicos discutidos principais"
+                      ].map(prompt => (
+                        <button
+                          key={prompt}
+                          onClick={() => setAssistantPrompt(prompt)}
+                          className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white text-xs rounded-full border border-white/5 transition-colors text-left"
+                        >
+                          {prompt}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
                 <div ref={responseEndRef} />

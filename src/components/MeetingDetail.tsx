@@ -32,8 +32,27 @@ export function MeetingDetail({ meeting, onBack, onDelete, onSummarize, isSummar
     a.click();
   };
 
-  const exportAudioWebm = () => {
+  const checkAudioValid = async () => {
+    if (!meeting.audioUrl) return false;
+    if (meeting.audioUrl.startsWith('blob:')) {
+      try {
+        const res = await fetch(meeting.audioUrl, { method: 'HEAD' });
+        if (!res.ok) return false;
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const exportAudioWebm = async () => {
     if (!meeting.audioUrl) return;
+    const isValid = await checkAudioValid();
+    if (!isValid) {
+       alert("O áudio não está mais disponível nesta sessão. Links de áudio temporário (WebM) são perdidos quando a página é recarregada para economizar armazenamento.");
+       return;
+    }
     const a = document.createElement('a');
     a.href = meeting.audioUrl;
     a.download = `audio-${meeting.title || 'reuniao'}.webm`;
@@ -44,6 +63,11 @@ export function MeetingDetail({ meeting, onBack, onDelete, onSummarize, isSummar
     if (!meeting.audioUrl) return;
     setIsExportingMp3(true);
     try {
+      const isValid = await checkAudioValid();
+      if (!isValid) {
+         alert("O áudio não está mais disponível nesta sessão. Links de áudio temporário (WebM) são perdidos quando a página é recarregada para economizar armazenamento.");
+         return;
+      }
       const mp3Blob = await convertBlobUrlToMp3(meeting.audioUrl);
       const url = URL.createObjectURL(mp3Blob);
       const a = document.createElement('a');
@@ -54,7 +78,7 @@ export function MeetingDetail({ meeting, onBack, onDelete, onSummarize, isSummar
     } catch (err) {
       console.error('Failed to convert to mp3', err);
       // fallback to standard export if somehow fails
-      alert('Erro ao exportar como MP3. Faça o download como WebM.');
+      alert('Erro ao exportar como MP3. O arquivo original (WebM) pode estar indisponível ou corrompido.');
     } finally {
       setIsExportingMp3(false);
     }
@@ -268,9 +292,25 @@ export function MeetingDetail({ meeting, onBack, onDelete, onSummarize, isSummar
                     </div>
                   </div>
                 ) : (
-                  <div className="h-40 flex flex-col items-center justify-center text-center space-y-4 text-white/20">
+                  <div className="h-auto py-8 flex flex-col items-center justify-center text-center space-y-4 text-white/20">
                     <Brain className="w-12 h-12 opacity-10" />
                     <p className="text-sm px-10">Peça resumos específicos, traduções ou análises detalhadas da sua transcrição.</p>
+                    <div className="flex flex-wrap items-center justify-center gap-2 mt-4 px-4 max-w-lg">
+                      {[
+                        "Resuma os 3 pontos principais",
+                        "Extraia as tarefas e responsáveis",
+                        "Faça uma ata formal da reunião",
+                        "Liste os tópicos discutidos principais"
+                      ].map(prompt => (
+                        <button
+                          key={prompt}
+                          onClick={() => setAssistantPrompt(prompt)}
+                          className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white text-xs rounded-full border border-white/5 transition-colors text-left"
+                        >
+                          {prompt}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
                 <div ref={responseEndRef} />
