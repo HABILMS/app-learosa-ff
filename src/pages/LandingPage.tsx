@@ -15,8 +15,12 @@ export default function LandingPage() {
       }
       await signInWithPopup(auth, googleProvider);
       navigate('/app');
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      if (e.code === 'auth/unauthorized-domain') {
+        alert('Erro no Login: Este domínio não está autorizado no Firebase. Adicione ' + window.location.hostname + ' na lista de domínios autorizados no Firebase Console > Authentication > Settings > Authorized domains.');
+        return;
+      }
       // Fallback: still navigate if auth fails for some reason (users can use anonymously without saving)
       navigate('/app');
     }
